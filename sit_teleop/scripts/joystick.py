@@ -5,7 +5,7 @@
 本脚本用于机器人的遥控
 """
 import time
-from typing import Optional, Deque, Tuple
+from typing import Optional, Deque
 
 import rospy
 from core import *
@@ -142,7 +142,8 @@ moveAxisMapping = {
 
 rospy.init_node('robot_teleop')
 pub = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
-lastOp: Optional[Operation] = None
+# Only allow one movement operation at the same time
+lastMoveOp: Optional[Operation] = None
 
 
 def matchButton(key: Key) -> Optional[Operation]:
@@ -161,10 +162,10 @@ def matchButton(key: Key) -> Optional[Operation]:
 
 
 def onKeyPressed(key: Key):
-    global lastOp
+    global lastMoveOp
     op = matchButton(key)
-    if lastOp != op:
-        lastOp = op
+    if lastMoveOp != op:
+        lastMoveOp = op
 
 
 def onJoyAdded(joy: Joystick):
@@ -183,9 +184,9 @@ def rosLoopCallback(info: ControlInfo, e):
     """
     速度处理函数
     """
-    if lastOp is None:
+    if lastMoveOp is None:
         return
-    lastOp.apply(info)
+    lastMoveOp.apply(info)
     info.sendVia(pub)
 
 
@@ -200,10 +201,15 @@ def main():
     # 打印首页
     print(helpInfo)
     info = ControlInfo()
-    info.display()
+
     joyListener = Thread(target=runJoyStickListener)
     joyListener.daemon = True
     joyListener.start()
+
+    dashBoardDrawer = Thread(target=lambda: drawDashboardFrame(info, helpInfo))
+    dashBoardDrawer.daemon = True
+    dashBoardDrawer.start()
+
     rospy.Timer(rospy.Duration(0.1), lambda e: rosLoopCallback(info, e))
     rospy.on_shutdown(on_shutdown)
 
