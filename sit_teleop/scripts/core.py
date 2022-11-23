@@ -10,8 +10,14 @@ class ControlInfo:
     targetX = 0
     targetY = 0
     targetTurnSpeed = 0
-    linearSpd: float = 0.2  # 最大线速度
-    yawSpd: float = 1  # 最大角速度
+    linearSpd = 0.2  # 最大线速度
+    yawSpd = 1  # 最大角速度
+    maxLinearSpd = 0.3
+    maxYawSpd = 0.5
+    minLinearSpd = 0
+    minYawSpd = 0
+    linearDeltaSpeed = 0.03
+    yawDeltaSpeed = 0.03
 
     def display(self):
         """
@@ -45,3 +51,6 @@ def publishSpeed(publisher, vx: float, vy: float, vth: float):
 
 def resetSpeed(publisher):
     publishSpeed(publisher, 0, 0, 0)
+
+def clamp(minvalue, value, maxvalue):
+    return max(minvalue, min(value, maxvalue))

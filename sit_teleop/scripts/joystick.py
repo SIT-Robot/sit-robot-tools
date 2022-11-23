@@ -90,6 +90,24 @@ class StopOp(Operation):
             return False
 
 
+class LinearSpdChangeOp(Operation):
+    def __init__(self, delta: float):
+        self.delta = delta
+
+    def apply(self, info: ControlInfo):
+        res = info.linearSpd + info.linearDeltaSpeed * self.delta
+        info.linearSpd = clamp(info.minLinearSpd, res, info.maxLinearSpd)
+
+
+class YawSpdChangeOp(Operation):
+    def __init__(self, delta: float):
+        self.delta = delta
+
+    def apply(self, info: ControlInfo):
+        res = info.yawSpd + info.yawDeltaSpeed * self.delta
+        info.yawSpd = clamp(info.minYawSpd, res, info.maxYawSpd)
+
+
 # NOTE: The chassis is reversed.
 moveButtonMappings = {
     # A
@@ -102,6 +120,13 @@ moveButtonMappings = {
     3: OmniMoveOp.by(Move.back),
     # Menu Button
     7: StopOp()
+}
+
+speedChangeMappings = {
+    Key.HAT_UP: LinearSpdChangeOp(1),
+    Key.HAT_DOWN: LinearSpdChangeOp(-1),
+    Key.HAT_LEFT: YawSpdChangeOp(1),
+    Key.HAT_RIGHT: YawSpdChangeOp(-1),
 }
 # Right Button (RB)
 stopButton = 5
@@ -124,15 +149,15 @@ def matchButton(key: Key) -> Optional[Operation]:
     if key.keytype == "Button":
         if key.number in moveButtonMappings:
             return moveButtonMappings[key.number]
-        else:
-            return None
     elif key.keytype == "Axis":
         if key.number == 0:
             return OmniMoveOp(x=key.raw_value)
-        elif key.keytype == 1:
+        elif key.number == 1:
             return OmniMoveOp(y=key.raw_value)
-    else:
-        return None
+    elif key.keytype == "Hat":
+        if key.value in speedChangeMappings:
+            return speedChangeMappings[key.value]
+    return None
 
 
 def onKeyPressed(key: Key):
