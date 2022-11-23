@@ -151,9 +151,9 @@ def matchButton(key: Key) -> Optional[Operation]:
             return moveButtonMappings[key.number]
     elif key.keytype == "Axis":
         if key.number == 0:
-            return OmniMoveOp(x=key.raw_value)
+            return OmniMoveOp(x=-key.raw_value)
         elif key.number == 1:
-            return OmniMoveOp(y=key.raw_value)
+            return OmniMoveOp(y=-key.raw_value)
     elif key.keytype == "Hat":
         if key.value in speedChangeMappings:
             return speedChangeMappings[key.value]
