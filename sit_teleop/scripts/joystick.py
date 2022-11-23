@@ -54,8 +54,9 @@ def matchButton(key: Key) -> Optional[Movement]:
     if key.keytype == "Button":
         if key.number in buttonMappings:
             if lastButton != (key.keytype, key.number):
-                time.sleep(1)
                 moveQueue.clear()
+                resetSpeed(pub)
+                time.sleep(1)
             return buttonMappings[key.number]
         return None
     else:
@@ -97,14 +98,14 @@ def rosLoopCallback(info: ControlInfo, e):
     info.xSpeed = target_speed_x
     info.ySpeed = target_speed_y
     info.turnSpeed = target_turn
-    publish_speed(pub, info.xSpeed, info.ySpeed, info.turnSpeed)
+    publishSpeed(pub, info.xSpeed, info.ySpeed, info.turnSpeed)
 
 
 def on_shutdown():
     """
     当节点关闭时的清理工作
     """
-    publish_speed(pub, 0, 0, 0)
+    resetSpeed(pub)
 
 
 def main():

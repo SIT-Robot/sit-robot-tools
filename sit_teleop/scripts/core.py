@@ -20,7 +20,7 @@ class ControlInfo:
         print(f"currently:\t speed {self.linear_speed} \t turn {self.yaw_speed}")
 
 
-def publish_speed(publisher, vx: float, vy: float, vth: float):
+def publishSpeed(publisher, vx: float, vy: float, vth: float):
     """
     发布速度信息
     """
@@ -33,3 +33,7 @@ def publish_speed(publisher, vx: float, vy: float, vth: float):
     twist.angular.y = 0
     twist.angular.z = vth
     publisher.publish(twist)
+
+
+def resetSpeed(publisher):
+    publishSpeed(publisher, 0, 0, 0)
