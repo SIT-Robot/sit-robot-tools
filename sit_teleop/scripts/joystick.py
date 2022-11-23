@@ -31,15 +31,16 @@ class Move:
     back = (-1, 0, 0)
 
 
+# NOTE: The chassis is reversed.
 buttonMappings = {
     # Y
-    3: Move.front,
+    3: Move.back,
     # X
-    2: Move.turnLeft,
+    2: Move.turnRight,
     # B
-    1: Move.turnRight,
+    1: Move.turnLeft,
     # A
-    0: Move.back,
+    0: Move.front,
 }
 
 # 速度增量
@@ -88,7 +89,7 @@ def rosLoopCallback(info: ControlInfo, e):
     """
     if len(moveQueue) <= 0:
         return
-    move = moveQueue.pop()
+    move = moveQueue.popleft()
     info.x, info.y, info.th = move
 
     # 目标速度=速度值*方向值
@@ -99,17 +100,17 @@ def rosLoopCallback(info: ControlInfo, e):
     for i, (control, target, delta) in enumerate(((info.xSpeed, target_speed_x, 0.006),
                                                   (info.ySpeed, target_speed_y, 0.006),
                                                   (info.turnSpeed, target_turn, 0.1))):
-        if target > control:
-            control = min(target, control + delta)
-        elif target < control:
-            control = max(target, control - delta)
+        # if target > control:
+        #     control = min(target, control + delta)
+        # elif target < control:
+        #     control = max(target, control - delta)
 
         if i == 0:
-            info.xSpeed = control
+            info.xSpeed = target_speed_x
         elif i == 1:
-            info.ySpeed = control
+            info.ySpeed = target_speed_y
         else:
-            info.turnSpeed = control
+            info.turnSpeed = target_turn
     publish_speed(pub, info.xSpeed, info.ySpeed, info.turnSpeed)
 
 
