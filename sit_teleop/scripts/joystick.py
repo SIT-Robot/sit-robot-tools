@@ -7,7 +7,7 @@
 from typing import Optional, Deque
 
 import rospy
-from .core import *
+from core import *
 from pyjoystick.sdl2 import Key, Joystick, run_event_loop
 from collections import deque
 from threading import Thread
