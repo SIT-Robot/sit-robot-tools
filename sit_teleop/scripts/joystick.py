@@ -4,7 +4,7 @@
 """
 本脚本用于机器人的遥控
 """
-from typing import Optional, Deque
+from typing import Optional, Deque, Tuple
 
 import rospy
 from core import *
@@ -12,7 +12,7 @@ from pyjoystick.sdl2 import Key, Joystick, run_event_loop
 from collections import deque
 from threading import Thread
 
-Movement = tuple[int, int, int]
+Movement = Tuple[int, int, int]
 
 helpInfo = """
 Control robot with Joystick!
@@ -41,7 +41,6 @@ buttonMappings = {
     # A
     0: Move.back,
 }
-
 
 # 速度增量
 speed_delta = {
