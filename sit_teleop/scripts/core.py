@@ -1,4 +1,5 @@
 import os
+import time
 
 from geometry_msgs.msg import Twist
 from io import StringIO
@@ -99,6 +100,8 @@ def composeDashboard(info: ControlInfo) -> str:
         s.write(" ")
         if info.yawSpd > 0:
             s.write(_rightArrow)
+        else:
+            s.write(" ")
         s.write("\n")
         # Line 3
         s.write("   ")
@@ -142,6 +145,7 @@ def drawingDashboard(info: ControlInfo, header: str = None, tail: str = None):
     while True:
         os.system('clear')
         displayDashboard(info, header, tail)
+        time.sleep(0.32)
 
 
 def displayDashboard(info: ControlInfo, header: str = None, tail: str = None):
