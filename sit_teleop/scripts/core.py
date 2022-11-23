@@ -3,6 +3,7 @@ class ControlInfo:
         self.targetX = 0
         self.targetY = 0
         self.targetTurnSpeed = 0
+
         self.linearSpd = 0.2
         self.minLinearSpd = 0
         self.maxLinearSpd = 0.3
@@ -22,6 +23,22 @@ class ControlInfo:
         from rosapi import publishSpeed
         publishSpeed(publisher, self.targetX, self.targetY, self.targetTurnSpeed)
 
+    def readFrom(self, json: dict):
+        self.deserializeFrom("linearSpd", json, float)
+        self.deserializeFrom("yawSpd", json, float)
+
+    def saveTo(self) -> dict:
+        return {
+            "linearSpd": self.linearSpd,
+            "yawSpd": self.yawSpd,
+        }
+
+    def deserializeFrom(self, name: str, json: dict, dtype: type):
+        if name in json:
+            v = json[name]
+            if isinstance(v, dtype):
+                setattr(self, name, v)
+
 
 def resetSpeed(publisher):
     from rosapi import publishSpeed
@@ -30,5 +47,3 @@ def resetSpeed(publisher):
 
 def clamp(minvalue, value, maxvalue):
     return max(minvalue, min(value, maxvalue))
-
-

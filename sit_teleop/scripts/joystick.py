@@ -4,6 +4,7 @@
 """
 本脚本用于机器人的遥控
 """
+import os
 from typing import Optional, Deque
 
 import rospy
@@ -12,6 +13,7 @@ from geometry_msgs.msg import Twist
 from pyjoystick.sdl2 import Key, Joystick, run_event_loop
 from collections import deque, namedtuple
 from threading import Thread
+import json
 
 from dashboard import drawingDashboard
 
@@ -25,6 +27,7 @@ For Xbox controller:
 """
 
 Movement = namedtuple("Movement", ["x", "y", "turn"])
+localSavePath = "joystick_conf.json"
 
 
 class Move:
@@ -208,11 +211,18 @@ def on_shutdown():
     resetSpeed(pub)
 
 
+# noinspection PyBroadException
 def main():
     # 打印首页
     print(helpInfo)
     info = ControlInfo()
-
+    try:
+        if os.path.exists(localSavePath):
+            with open(localSavePath, mode="r") as f:
+                obj = json.loads(f.read())
+                info.readFrom(obj)
+    except:
+        pass
     joyListener = Thread(target=runJoyStickListener)
     joyListener.daemon = True
     joyListener.start()
@@ -233,10 +243,16 @@ def main():
 
     try:
         rospy.spin()
-    except KeyboardInterrupt:
+    finally:
         rospy.loginfo('Cleaning up...')
         rospy.signal_shutdown("Normal exit")
         rospy.loginfo('Joysticks control disconnected.')
+        try:
+            content = json.dumps(info.saveTo())
+            with open(localSavePath, mode="w") as f:
+                f.write(content)
+        except:
+            pass
 
 
 if __name__ == '__main__':
