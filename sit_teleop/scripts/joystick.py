@@ -49,6 +49,12 @@ class ButtonTurnOp(Operation):
     def apply(self, info: ControlInfo):
         info.targetTurnSpeed = info.yawSpd * self.direction
 
+    def __eq__(self, other):
+        if isinstance(other, ButtonTurnOp):
+            return self.direction == other.direction
+        else:
+            return False
+
 
 class OmniMoveOp(Operation):
     def __init__(self, x: Optional[float] = None, y: Optional[float] = None):
@@ -65,11 +71,23 @@ class OmniMoveOp(Operation):
         if self.y is not None:
             info.targetY = info.linearSpd * self.y
 
+    def __eq__(self, other):
+        if isinstance(other, OmniMoveOp):
+            return self.x == other.x and self.y == other.y
+        else:
+            return False
+
 
 class StopOp(Operation):
 
     def apply(self, info: ControlInfo):
         info.resetTargetSpd()
+
+    def __eq__(self, other):
+        if isinstance(other, StopOp):
+            return True
+        else:
+            return False
 
 
 # NOTE: The chassis is reversed.
@@ -82,7 +100,8 @@ moveButtonMappings = {
     1: ButtonTurnOp.by(Move.turnLeft),
     # Y
     3: OmniMoveOp.by(Move.back),
-    5: StopOp()
+    # Menu Button
+    7: StopOp()
 }
 # Right Button (RB)
 stopButton = 5
@@ -98,7 +117,7 @@ moveAxisMapping = {
 
 rospy.init_node('robot_teleop')
 pub = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
-opQueue: Deque[Operation] = deque()
+lastOp: Optional[Operation] = None
 
 
 def matchButton(key: Key) -> Optional[Operation]:
@@ -117,9 +136,10 @@ def matchButton(key: Key) -> Optional[Operation]:
 
 
 def onKeyPressed(key: Key):
+    global lastOp
     op = matchButton(key)
-    if op is not None:
-        opQueue.append(op)
+    if lastOp != op:
+        lastOp = op
 
 
 def onJoyAdded(joy: Joystick):
@@ -138,10 +158,9 @@ def rosLoopCallback(info: ControlInfo, e):
     """
     速度处理函数
     """
-    if len(opQueue) <= 0:
+    if lastOp is None:
         return
-    op = opQueue.popleft()
-    op.apply(info)
+    lastOp.apply(info)
     info.sendVia(pub)
 
 
