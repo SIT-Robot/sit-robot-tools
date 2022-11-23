@@ -7,17 +7,25 @@ class ControlInfo:
     y = 0
     th = 0
     # 最终要控制的速度
-    xSpeed = 0
-    ySpeed = 0
-    turnSpeed = 0
-    linear_speed: float = 0.2  # 最大线速度
-    yaw_speed: float = 1  # 最大角速度
+    targetX = 0
+    targetY = 0
+    targetTurnSpeed = 0
+    linearSpd: float = 0.2  # 最大线速度
+    yawSpd: float = 1  # 最大角速度
 
     def display(self):
         """
         打印当前能达到的最大速度
         """
-        print(f"currently:\t speed {self.linear_speed} \t turn {self.yaw_speed}")
+        print(f"currently:\t speed {self.linearSpd} \t turn {self.yawSpd}")
+
+    def resetTargetSpd(self):
+        self.targetX = 0
+        self.targetY = 0
+        self.targetTurnSpeed = 0
+
+    def sendVia(self, publisher):
+        publishSpeed(publisher, self.targetX, self.targetY, self.targetTurnSpeed)
 
 
 def publishSpeed(publisher, vx: float, vy: float, vth: float):

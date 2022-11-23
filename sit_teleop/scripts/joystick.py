@@ -10,10 +10,8 @@ from typing import Optional, Deque, Tuple
 import rospy
 from core import *
 from pyjoystick.sdl2 import Key, Joystick, run_event_loop
-from collections import deque
+from collections import deque, namedtuple
 from threading import Thread
-
-Movement = Tuple[int, int, int]
 
 helpInfo = """
 Control robot with Joystick!
@@ -24,43 +22,96 @@ For Xbox controller:
         A
 """
 
+Movement = namedtuple("Movement", ["x", "y", "turn"])
+
 
 class Move:
-    front = (1, 0, 0)
-    turnLeft = (0, 0, 1)
-    turnRight = (0, 0, -1)
-    back = (-1, 0, 0)
-    zero = (0, 0, 0)
+    front = Movement(1, 0, 0)
+    turnLeft = Movement(0, 0, 1)
+    turnRight = Movement(0, 0, -1)
+    back = Movement(-1, 0, 0)
+    zero = Movement(0, 0, 0)
+
+
+class Operation:
+    def apply(self, info: ControlInfo):
+        pass
+
+
+class ButtonTurnOp(Operation):
+    def __init__(self, direction):
+        self.direction = direction
+
+    @staticmethod
+    def by(move: Movement) -> "ButtonTurnOp":
+        return ButtonTurnOp(move.turn)
+
+    def apply(self, info: ControlInfo):
+        info.targetTurnSpeed = info.yawSpd * self.direction
+
+
+class OmniMoveOp(Operation):
+    def __init__(self, x: Optional[float] = None, y: Optional[float] = None):
+        self.x = x
+        self.y = y
+
+    @staticmethod
+    def by(move: Movement) -> "OmniMoveOp":
+        return OmniMoveOp(move.x, move.y)
+
+    def apply(self, info: ControlInfo):
+        if self.x is not None:
+            info.targetX = info.linearSpd * self.x
+        if self.y is not None:
+            info.targetY = info.linearSpd * self.y
+
+
+class StopOp(Operation):
+
+    def apply(self, info: ControlInfo):
+        info.resetTargetSpd()
 
 
 # NOTE: The chassis is reversed.
 moveButtonMappings = {
-    # Y
-    3: Move.back,
-    # X
-    2: Move.turnRight,
-    # B
-    1: Move.turnLeft,
     # A
-    0: Move.front,
+    0: OmniMoveOp.by(Move.front),
+    # B
+    2: ButtonTurnOp.by(Move.turnRight),
+    # X
+    1: ButtonTurnOp.by(Move.turnLeft),
+    # Y
+    3: OmniMoveOp.by(Move.back),
+    5: StopOp()
 }
 # Right Button (RB)
 stopButton = 5
 # Menu Button
 # quitButton = 7
 
+moveAxisMapping = {
+    # Left
+    0: (1, 0),
+    # Right
+    1: (0, 1)
+}
+
 rospy.init_node('robot_teleop')
 pub = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
-moveQueue: Deque[Movement] = deque()
+opQueue: Deque[Operation] = deque()
 
 
-def matchButton(key: Key) -> Optional[Movement]:
+def matchButton(key: Key) -> Optional[Operation]:
     if key.keytype == "Button":
         if key.number in moveButtonMappings:
             return moveButtonMappings[key.number]
-        elif key.number == stopButton:
-            return Move.zero
-        return None
+        else:
+            return None
+    elif key.keyname == "Axis":
+        if key.number == 0:
+            return OmniMoveOp(x=key.raw_value)
+        elif key.number == 1:
+            return OmniMoveOp(y=key.raw_value)
     else:
         return None
 
@@ -68,7 +119,7 @@ def matchButton(key: Key) -> Optional[Movement]:
 def onKeyPressed(key: Key):
     op = matchButton(key)
     if op is not None:
-        moveQueue.append(op)
+        opQueue.append(op)
 
 
 def onJoyAdded(joy: Joystick):
@@ -87,20 +138,11 @@ def rosLoopCallback(info: ControlInfo, e):
     """
     速度处理函数
     """
-    if len(moveQueue) <= 0:
+    if len(opQueue) <= 0:
         return
-    move = moveQueue.popleft()
-    info.x, info.y, info.th = move
-
-    # 目标速度=速度值*方向值
-    target_speed_x = info.linear_speed * info.x
-    target_speed_y = info.linear_speed * info.y
-    target_turn = info.yaw_speed * info.th
-
-    info.xSpeed = target_speed_x
-    info.ySpeed = target_speed_y
-    info.turnSpeed = target_turn
-    publishSpeed(pub, info.xSpeed, info.ySpeed, info.turnSpeed)
+    op = opQueue.popleft()
+    op.apply(info)
+    info.sendVia(pub)
 
 
 def on_shutdown():
