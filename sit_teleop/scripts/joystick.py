@@ -4,6 +4,7 @@
 """
 本脚本用于机器人的遥控
 """
+import time
 from typing import Optional, Deque, Tuple
 
 import rospy
@@ -43,22 +44,18 @@ buttonMappings = {
     0: Move.front,
 }
 
-# 速度增量
-speed_delta = {
-    'w': (1.1, 1),  # 增加最大线速度
-    'x': (0.9, 1),  # 减小最大线速度
-    'e': (1, 1.1),  # 增大最大角速度
-    'c': (1, 0.9),  # 减小最大角速度
-}
-
 rospy.init_node('robot_teleop')
 pub = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
 moveQueue: Deque[Movement] = deque()
+lastButton = ()
 
 
 def matchButton(key: Key) -> Optional[Movement]:
     if key.keytype == "Button":
         if key.number in buttonMappings:
+            if lastButton != (key.keytype, key.number):
+                time.sleep(1)
+                moveQueue.clear()
             return buttonMappings[key.number]
         return None
     else:
@@ -97,20 +94,9 @@ def rosLoopCallback(info: ControlInfo, e):
     target_speed_y = info.linear_speed * info.y
     target_turn = info.yaw_speed * info.th
 
-    for i, (control, target, delta) in enumerate(((info.xSpeed, target_speed_x, 0.006),
-                                                  (info.ySpeed, target_speed_y, 0.006),
-                                                  (info.turnSpeed, target_turn, 0.1))):
-        # if target > control:
-        #     control = min(target, control + delta)
-        # elif target < control:
-        #     control = max(target, control - delta)
-
-        if i == 0:
-            info.xSpeed = target_speed_x
-        elif i == 1:
-            info.ySpeed = target_speed_y
-        else:
-            info.turnSpeed = target_turn
+    info.xSpeed = target_speed_x
+    info.ySpeed = target_speed_y
+    info.turnSpeed = target_turn
     publish_speed(pub, info.xSpeed, info.ySpeed, info.turnSpeed)
 
 
