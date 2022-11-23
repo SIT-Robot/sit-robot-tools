@@ -1,4 +1,5 @@
 import time
+from typing import Callable
 
 from core import *
 from utils import *
@@ -62,17 +63,17 @@ def composeSpeedDashboard(info: ControlInfo, board: Str2D):
     board[turnCenter] = whiteBlock
 
 
-def drawingDashboard(info: ControlInfo, header: str = None, tail: str = None):
+def drawingDashboard(info: ControlInfo, header: Callable[[], None] = None, tail: Callable[[], None] = None):
     board = Str2D(36, 11, filler=blackBlock)
     while True:
         clearScreen()
         if header is not None:
-            print(header)
+            header()
         print(f"Target XY:({'%.2f' % info.targetX},{'%.2f' % info.targetY})")
         print(f"Target Yaw:{'%.2f' % info.targetTurnSpeed}")
         composeSpeedDashboard(info, board)
         print(board.compose())
         displaySpeedIndicator(info)
         if tail is not None:
-            print(tail)
+            tail()
         time.sleep(0.32)

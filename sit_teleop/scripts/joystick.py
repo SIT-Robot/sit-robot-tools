@@ -4,14 +4,16 @@
 """
 本脚本用于机器人的遥控
 """
-import time
 from typing import Optional, Deque
 
 import rospy
 from core import *
+from geometry_msgs.msg import Twist
 from pyjoystick.sdl2 import Key, Joystick, run_event_loop
 from collections import deque, namedtuple
 from threading import Thread
+
+from dashboard import drawingDashboard
 
 helpInfo = """
 Control robot with Joystick!
@@ -152,6 +154,7 @@ pub = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
 # Only allow one movement operation at the same time
 lastMoveOp: Optional[Operation] = None
 metaOpQueue: Deque[MetaOperation] = deque()
+joystick: Optional[Joystick] = None
 
 
 def onKeyPressed(key: Key):
@@ -174,10 +177,14 @@ def onKeyPressed(key: Key):
 
 
 def onJoyAdded(joy: Joystick):
+    global joystick
+    joystick = joy
     print(f"{joy.name} Connected.")
 
 
 def onJoyRemoved(joy: Joystick):
+    global joystick
+    joystick = joy
     print(f"{joy.name} Disconnected.")
 
 
@@ -210,9 +217,16 @@ def main():
     joyListener.daemon = True
     joyListener.start()
 
-    dashBoardDrawer = Thread(target=lambda: drawingDashboard(info, helpInfo))
-    dashBoardDrawer.daemon = True
-    dashBoardDrawer.start()
+    def dashboardHeader():
+        print(helpInfo)
+        if joystick is None:
+            print("[Controller Disconnected]")
+        else:
+            print(f'[Controller "{joystick.name}" Connected]')
+
+    dashboardDrawer = Thread(target=lambda: drawingDashboard(info, dashboardHeader))
+    dashboardDrawer.daemon = True
+    dashboardDrawer.start()
 
     rospy.Timer(rospy.Duration(0.1), lambda e: rosLoopCallback(info, e))
     rospy.on_shutdown(on_shutdown)
