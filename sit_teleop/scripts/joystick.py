@@ -46,24 +46,19 @@ moveButtonMappings = {
 }
 # Right Button (RB)
 stopButton = 5
+# Menu Button
+# quitButton = 7
 
 rospy.init_node('robot_teleop')
 pub = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
 moveQueue: Deque[Movement] = deque()
-_defaultLastButton = ()
-lastButton = _defaultLastButton
 
 
 def matchButton(key: Key) -> Optional[Movement]:
     if key.keytype == "Button":
         if key.number in moveButtonMappings:
-            if lastButton is not _defaultLastButton and lastButton != (key.keytype, key.number):
-                moveQueue.clear()
-                resetSpeed(pub)
-                time.sleep(5)
             return moveButtonMappings[key.number]
         elif key.number == stopButton:
-            resetSpeed(pub)
             return Move.zero
         return None
     else:
