@@ -71,10 +71,12 @@ def onKeyPressed(key: Key):
         moveQueue.append(op)
 
 
-def onJoyAdded(joy: Joystick): pass
+def onJoyAdded(joy: Joystick):
+    print(f"{joy.name} Connected.")
 
 
-def onJoyRemoved(joy: Joystick): pass
+def onJoyRemoved(joy: Joystick):
+    print(f"{joy.name} Disconnected.")
 
 
 def runJoyStickListener():
