@@ -206,7 +206,7 @@ def main():
     joyListener.daemon = True
     joyListener.start()
 
-    dashBoardDrawer = Thread(target=lambda: drawDashboardFrame(info, helpInfo))
+    dashBoardDrawer = Thread(target=lambda: drawingDashboard(info, helpInfo))
     dashBoardDrawer.daemon = True
     dashBoardDrawer.start()
 

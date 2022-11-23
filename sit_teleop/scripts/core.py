@@ -18,7 +18,7 @@ class ControlInfo:
         self.maxYawSpd = 0.5
         self.minLinearSpd = 0
         self.minYawSpd = 0
-        self.linearDeltaSpeed = 0.03
+        self.linearDeltaSpeed = 0.01
         self.yawDeltaSpeed = 0.03
 
     def resetTargetSpd(self):
@@ -87,6 +87,8 @@ def composeDashboard(info: ControlInfo) -> str:
         # Right
         if info.targetX > 0:
             s.write(_rightArrow)
+        else:
+            s.write("  ")
         s.write("  |  ")
         if info.yawSpd < 0:
             s.write(_leftArrow)
@@ -118,22 +120,28 @@ def displaySpeedBlock(minSpd, cur, maxSpd) -> str:
     return composeSpeedBlock(percent)
 
 
+_linearSpdHeader = "Linear Speed:"
+_yawSpdHeader = "Yaw Speed:"
+_yawSpdHeader += (len(_linearSpdHeader) - len(_yawSpdHeader)) * " "
+
+
 def displaySpeedIndicator(info: ControlInfo):
     print(
-        "Linear Speed:",
+        _linearSpdHeader,
         displaySpeedBlock(info.minLinearSpd, info.linearSpd, info.maxLinearSpd),
         f"+{info.linearDeltaSpeed}"
     )
     print(
-        "Yaw Speed:",
+        _yawSpdHeader,
         displaySpeedBlock(info.minYawSpd, info.yawSpd, info.maxYawSpd),
         f"+{info.yawDeltaSpeed}"
     )
 
 
-def drawDashboardFrame(info: ControlInfo, header: str = None, tail: str = None):
-    os.system('clear')
-    displayDashboard(info, header, tail)
+def drawingDashboard(info: ControlInfo, header: str = None, tail: str = None):
+    while True:
+        os.system('clear')
+        displayDashboard(info, header, tail)
 
 
 def displayDashboard(info: ControlInfo, header: str = None, tail: str = None):
