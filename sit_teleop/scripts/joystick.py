@@ -38,6 +38,10 @@ class Operation:
         pass
 
 
+class MetaOperation(Operation):
+    pass
+
+
 class ButtonTurnOp(Operation):
     def __init__(self, direction):
         self.direction = direction
@@ -47,6 +51,8 @@ class ButtonTurnOp(Operation):
         return ButtonTurnOp(move.turn)
 
     def apply(self, info: ControlInfo):
+        info.targetX = 0
+        info.targetY = 0
         info.targetTurnSpeed = info.yawSpd * self.direction
 
     def __eq__(self, other):
@@ -66,6 +72,7 @@ class OmniMoveOp(Operation):
         return OmniMoveOp(move.x, move.y)
 
     def apply(self, info: ControlInfo):
+        info.targetTurnSpeed = 0
         if self.x is not None:
             info.targetX = info.linearSpd * self.x
         if self.y is not None:
@@ -90,7 +97,7 @@ class StopOp(Operation):
             return False
 
 
-class LinearSpdChangeOp(Operation):
+class LinearSpdChangeOp(MetaOperation):
     def __init__(self, delta: float):
         self.delta = delta
 
@@ -99,7 +106,7 @@ class LinearSpdChangeOp(Operation):
         info.linearSpd = clamp(info.minLinearSpd, res, info.maxLinearSpd)
 
 
-class YawSpdChangeOp(Operation):
+class YawSpdChangeOp(MetaOperation):
     def __init__(self, delta: float):
         self.delta = delta
 
@@ -144,26 +151,24 @@ rospy.init_node('robot_teleop')
 pub = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
 # Only allow one movement operation at the same time
 lastMoveOp: Optional[Operation] = None
-
-
-def matchButton(key: Key) -> Optional[Operation]:
-    if key.keytype == "Button":
-        if key.number in moveButtonMappings:
-            return moveButtonMappings[key.number]
-    elif key.keytype == "Axis":
-        if key.number == 0:
-            return OmniMoveOp(y=key.raw_value)
-        elif key.number == 1:
-            return OmniMoveOp(x=key.raw_value)
-    elif key.keytype == "Hat":
-        if key.value in speedChangeMappings:
-            return speedChangeMappings[key.value]
-    return None
+metaOpQueue: Deque[MetaOperation] = deque()
 
 
 def onKeyPressed(key: Key):
     global lastMoveOp
-    op = matchButton(key)
+    op = None
+    if key.keytype == "Button":
+        if key.number in moveButtonMappings:
+            op = moveButtonMappings[key.number]
+    elif key.keytype == "Axis":
+        if key.number == 0:
+            op = OmniMoveOp(y=key.raw_value)
+        elif key.number == 1:
+            op = OmniMoveOp(x=key.raw_value)
+    elif key.keytype == "Hat":
+        if key.value in speedChangeMappings:
+            op = speedChangeMappings[key.value]
+            metaOpQueue.append(op)
     if lastMoveOp != op:
         lastMoveOp = op
 
@@ -181,12 +186,11 @@ def runJoyStickListener():
 
 
 def rosLoopCallback(info: ControlInfo, e):
-    """
-    速度处理函数
-    """
-    if lastMoveOp is None:
-        return
-    lastMoveOp.apply(info)
+    if lastMoveOp is not None:
+        lastMoveOp.apply(info)
+    if len(metaOpQueue) > 0:
+        op = metaOpQueue.popleft()
+        op.apply(info)
     info.sendVia(pub)
 
 
