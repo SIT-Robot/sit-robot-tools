@@ -107,10 +107,10 @@ def matchButton(key: Key) -> Optional[Operation]:
             return moveButtonMappings[key.number]
         else:
             return None
-    elif key.keyname == "Axis":
+    elif key.keytype == "Axis":
         if key.number == 0:
             return OmniMoveOp(x=key.raw_value)
-        elif key.number == 1:
+        elif key.keytype == 1:
             return OmniMoveOp(y=key.raw_value)
     else:
         return None
