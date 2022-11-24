@@ -239,7 +239,7 @@ def main():
     dashboardDrawer.daemon = True
     dashboardDrawer.start()
 
-    rospy.Timer(rospy.Duration(0.1), lambda e: rosLoopCallback(info, e))
+    rospy.Timer(rospy.Duration(0.05), lambda e: rosLoopCallback(info, e))
     rospy.on_shutdown(on_shutdown)
 
     try:
