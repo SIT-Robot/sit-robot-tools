@@ -199,6 +199,9 @@ def onKeyPressed(key: Key):
         elif key.number == 1:
             lastMoveOp = OmniMoveOp(x=key.raw_value)
 
+        elif key.number == 4:
+            lastMoveOp = ButtonTurnOp(key.raw_value)
+
     elif key.keytype == "Hat":
         if key.value in speedChangeMappings:
             op = speedChangeMappings[key.value]
