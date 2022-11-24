@@ -45,8 +45,7 @@ class Dashboard:
             clearScreen()
             if header is not None:
                 header()
-            print(f"Target XY:({'%.2f' % info.targetX},{'%.2f' % info.targetY})")
-            print(f"Target Yaw:{'%.2f' % info.targetYawSpeed}")
+            print(f"Target XY:({'%.2f' % info.targetX},{'%.2f' % info.targetY}) Target Yaw:{'%.2f' % info.targetYawSpeed}")
             self.composeSpeedDashboard(info)
             print(self._board.compose())
             self.displaySpeedIndicator(info)

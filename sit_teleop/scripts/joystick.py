@@ -45,6 +45,12 @@ class Operation:
     def apply(self, info: ControlInfo):
         pass
 
+    def __str__(self) -> str:
+        return "Operation"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
 
 class MetaOperation(Operation):
     pass
@@ -69,6 +75,9 @@ class ButtonTurnOp(Operation):
         else:
             return False
 
+    def __str__(self) -> str:
+        return f"ButtonTurn({'%.2f' % self.direction})"
+
 
 class OmniMoveOp(Operation):
     def __init__(self, x: Optional[float] = None, y: Optional[float] = None):
@@ -92,6 +101,9 @@ class OmniMoveOp(Operation):
         else:
             return False
 
+    def __str__(self) -> str:
+        return f"OmniMove({'%.2f' % self.x},{'%.2f' % self.y})"
+
 
 class StopOp(Operation):
 
@@ -104,6 +116,9 @@ class StopOp(Operation):
         else:
             return False
 
+    def __str__(self) -> str:
+        return f"Stop"
+
 
 class LinearSpdChangeOp(MetaOperation):
     def __init__(self, delta: float):
@@ -113,6 +128,9 @@ class LinearSpdChangeOp(MetaOperation):
         res = info.linearSpd + info.linearDeltaSpeed * self.delta
         info.linearSpd = clamp(info.minLinearSpd, res, info.maxLinearSpd)
 
+    def __str__(self) -> str:
+        return f"LinearSpdChange: {'%0.2f' % self.delta}"
+
 
 class YawSpdChangeOp(MetaOperation):
     def __init__(self, delta: float):
@@ -121,6 +139,9 @@ class YawSpdChangeOp(MetaOperation):
     def apply(self, info: ControlInfo):
         res = info.yawSpd + info.yawDeltaSpeed * self.delta
         info.yawSpd = clamp(info.minYawSpd, res, info.maxYawSpd)
+
+    def __str__(self) -> str:
+        return f"YawSpdChange: {'%0.2f' % self.delta}"
 
 
 # NOTE: The chassis is reversed.
@@ -241,8 +262,13 @@ def main():
         else:
             print(f'[Controller "{joystick.name}" Connected]')
 
+    def dashboardTail():
+        print(f"LastMoveOP: {lastMoveOp}")
+
     dashboard = Dashboard()
-    dashboardDrawer = Thread(target=lambda: dashboard.startRender(info, dashboardHeader))
+    dashboardDrawer = Thread(
+        target=lambda: dashboard.startRender(info, dashboardHeader, dashboardTail)
+    )
     dashboardDrawer.daemon = True
     dashboardDrawer.start()
 
