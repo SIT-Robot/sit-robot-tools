@@ -193,13 +193,16 @@ def onKeyPressed(key: Key):
             lastMoveOp = moveButtonMappings[key.number]
 
     elif key.keytype == "Axis":
+        # Left or Right
         if key.number == 0:
             lastMoveOp = OmniMoveOp(y=key.raw_value)
 
+        # Forward or Back
         elif key.number == 1:
             lastMoveOp = OmniMoveOp(x=key.raw_value)
 
-        elif key.number == 4:
+        # Turn Left or Right
+        elif key.number == 3:
             lastMoveOp = ButtonTurnOp(key.raw_value)
 
     elif key.keytype == "Hat":
