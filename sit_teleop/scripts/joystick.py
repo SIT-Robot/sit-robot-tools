@@ -5,7 +5,7 @@
 本脚本用于机器人的遥控
 """
 import os
-from typing import Optional, Deque
+from typing import Optional, Deque, Callable
 
 import rospy
 from core import *
@@ -30,6 +30,14 @@ Movement = namedtuple("Movement", ["x", "y", "turn"])
 localSavePath = "joystick_conf.json"
 
 
+def _doNothing(): pass
+
+
+class Kernal:
+    def __init__(self):
+        self.refreshMove = _doNothing
+
+
 class Move:
     front = Movement(1, 0, 0)
     turnLeft = Movement(0, 0, 1)
@@ -39,7 +47,7 @@ class Move:
 
 
 class Operation:
-    def apply(self, info: ControlInfo):
+    def apply(self, kernal: Kernal, info: ControlInfo):
         pass
 
 
@@ -55,7 +63,7 @@ class ButtonTurnOp(Operation):
     def by(move: Movement) -> "ButtonTurnOp":
         return ButtonTurnOp(move.turn)
 
-    def apply(self, info: ControlInfo):
+    def apply(self, kernal: Kernal, info: ControlInfo):
         info.targetX = 0
         info.targetY = 0
         info.targetYawSpeed = info.yawSpd * self.direction
@@ -76,7 +84,7 @@ class OmniMoveOp(Operation):
     def by(move: Movement) -> "OmniMoveOp":
         return OmniMoveOp(move.x, move.y)
 
-    def apply(self, info: ControlInfo):
+    def apply(self, kernal: Kernal, info: ControlInfo):
         info.targetYawSpeed = 0
         if self.x is not None:
             info.targetX = info.linearSpd * self.x
@@ -92,7 +100,7 @@ class OmniMoveOp(Operation):
 
 class StopOp(Operation):
 
-    def apply(self, info: ControlInfo):
+    def apply(self, kernal: Kernal, info: ControlInfo):
         info.resetTargetSpd()
 
     def __eq__(self, other):
@@ -106,18 +114,20 @@ class LinearSpdChangeOp(MetaOperation):
     def __init__(self, delta: float):
         self.delta = delta
 
-    def apply(self, info: ControlInfo):
+    def apply(self, kernal: Kernal, info: ControlInfo):
         res = info.linearSpd + info.linearDeltaSpeed * self.delta
         info.linearSpd = clamp(info.minLinearSpd, res, info.maxLinearSpd)
+        kernal.refreshMove()
 
 
 class YawSpdChangeOp(MetaOperation):
     def __init__(self, delta: float):
         self.delta = delta
 
-    def apply(self, info: ControlInfo):
+    def apply(self, kernal: Kernal, info: ControlInfo):
         res = info.yawSpd + info.yawDeltaSpeed * self.delta
         info.yawSpd = clamp(info.minYawSpd, res, info.maxYawSpd)
+        kernal.refreshMove()
 
 
 # NOTE: The chassis is reversed.
@@ -195,12 +205,21 @@ def runJoyStickListener():
     run_event_loop(onJoyAdded, onJoyRemoved, onKeyPressed)
 
 
-def rosLoopCallback(info: ControlInfo, e):
+def createRosLoopTask(kernal: Kernal, info: ControlInfo) -> Callable[[object], None]:
+    def refreshMoveFunc():
+        if lastMoveOp is not None:
+            lastMoveOp.apply(kernal, info)
+
+    kernal.refreshMove = refreshMoveFunc
+    return lambda event: rosLoopCallback(kernal, info, event)
+
+
+def rosLoopCallback(kernal: Kernal, info: ControlInfo, e):
     if lastMoveOp is not None:
-        lastMoveOp.apply(info)
+        lastMoveOp.apply(kernal, info)
     if len(metaOpQueue) > 0:
         op = metaOpQueue.popleft()
-        op.apply(info)
+        op.apply(kernal, info)
     info.sendVia(pub)
 
 
@@ -239,7 +258,8 @@ def main():
     dashboardDrawer.daemon = True
     dashboardDrawer.start()
 
-    rospy.Timer(rospy.Duration(0.05), lambda e: rosLoopCallback(info, e))
+    kernal: Kernal = Kernal()
+    rospy.Timer(rospy.Duration(0.05), createRosLoopTask(kernal, info))
     rospy.on_shutdown(on_shutdown)
 
     try:
