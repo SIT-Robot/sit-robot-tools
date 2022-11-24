@@ -16,10 +16,10 @@ _yawSpdHeader += (len(_linearSpdHeader) - len(_yawSpdHeader)) * " "
 class Dashboard:
     def __init__(self):
         self.speedBlockCount = 25
-        self.board = Str2D(36, 11)
+        self._board = Str2D(36, 11, filler=blackBlock)
 
     def composeSpeedDashboard(self, info: ControlInfo):
-        board = self.board
+        board = self._board
         center = (9, 5)
         # Move Left
         board.hline(center, -5, filler=greenBlock if info.targetY < 0 else blackBlock)
@@ -48,7 +48,7 @@ class Dashboard:
             print(f"Target XY:({'%.2f' % info.targetX},{'%.2f' % info.targetY})")
             print(f"Target Yaw:{'%.2f' % info.targetYawSpeed}")
             self.composeSpeedDashboard(info)
-            print(self.board.compose())
+            print(self._board.compose())
             self.displaySpeedIndicator(info)
             if tail is not None:
                 tail()
