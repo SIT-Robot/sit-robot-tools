@@ -102,7 +102,9 @@ class OmniMoveOp(Operation):
             return False
 
     def __str__(self) -> str:
-        return f"OmniMove({'%.2f' % self.x},{'%.2f' % self.y})"
+        x = 0 if self.x is None else self.x
+        y = 0 if self.y is None else self.y
+        return f"OmniMove({'%.2f' % x},{'%.2f' % y})"
 
 
 class StopOp(Operation):
