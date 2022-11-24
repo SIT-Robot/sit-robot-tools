@@ -190,20 +190,14 @@ def onKeyPressed(key: Key):
     global lastMoveOp
     if key.keytype == "Button":
         if key.number in moveButtonMappings:
-            newOp = moveButtonMappings[key.number]
-            if lastMoveOp != newOp:
-                lastMoveOp = newOp
+            lastMoveOp = moveButtonMappings[key.number]
 
     elif key.keytype == "Axis":
         if key.number == 0:
-            newOp = OmniMoveOp(y=key.raw_value)
-            if lastMoveOp != newOp:
-                lastMoveOp = newOp
+            lastMoveOp = OmniMoveOp(y=key.raw_value)
 
         elif key.number == 1:
-            newOp = OmniMoveOp(x=key.raw_value)
-            if lastMoveOp != newOp:
-                lastMoveOp = newOp
+            lastMoveOp = OmniMoveOp(x=key.raw_value)
 
     elif key.keytype == "Hat":
         if key.value in speedChangeMappings:
