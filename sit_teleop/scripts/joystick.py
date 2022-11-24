@@ -201,6 +201,7 @@ def onKeyPressed(key: Key):
         if key.value in speedChangeMappings:
             op = speedChangeMappings[key.value]
             metaOpQueue.append(op)
+            newOp = lastMoveOp
     if lastMoveOp != newOp:
         lastMoveOp = newOp
 
