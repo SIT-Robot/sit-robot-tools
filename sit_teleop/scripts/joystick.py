@@ -188,21 +188,21 @@ joystick: Optional[Joystick] = None
 
 def onKeyPressed(key: Key):
     global lastMoveOp
-    op = None
+    newOp = None
     if key.keytype == "Button":
         if key.number in moveButtonMappings:
-            op = moveButtonMappings[key.number]
+            newOp = moveButtonMappings[key.number]
     elif key.keytype == "Axis":
         if key.number == 0:
-            op = OmniMoveOp(y=key.raw_value)
+            newOp = OmniMoveOp(y=key.raw_value)
         elif key.number == 1:
-            op = OmniMoveOp(x=key.raw_value)
+            newOp = OmniMoveOp(x=key.raw_value)
     elif key.keytype == "Hat":
         if key.value in speedChangeMappings:
             op = speedChangeMappings[key.value]
             metaOpQueue.append(op)
-    if lastMoveOp != op:
-        lastMoveOp = op
+    if lastMoveOp != newOp:
+        lastMoveOp = newOp
 
 
 def onJoyAdded(joy: Joystick):
