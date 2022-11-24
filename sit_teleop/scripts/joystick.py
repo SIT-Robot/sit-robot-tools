@@ -229,8 +229,7 @@ def createRosLoopTask(info: ControlInfo) -> Callable[[object], None]:
             op.apply(info)
         if lastMoveOp is not None:
             lastMoveOp.apply(info)
-        if info.consumeDirty():
-            info.sendVia(pub)
+        info.sendVia(pub)
 
     return rosLoopCallback
 
@@ -275,7 +274,7 @@ def main():
     dashboardDrawer.daemon = True
     dashboardDrawer.start()
 
-    rospy.Timer(rospy.Duration(0.05), createRosLoopTask(info))
+    rospy.Timer(rospy.Duration(0.1), createRosLoopTask(info))
     rospy.on_shutdown(on_shutdown)
 
     try:
