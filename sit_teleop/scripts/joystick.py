@@ -15,7 +15,7 @@ from collections import deque, namedtuple
 from threading import Thread
 import json
 
-from dashboard import drawingDashboard
+from dashboard import Dashboard
 
 helpInfo = """
 Control robot with Joystick!
@@ -58,7 +58,7 @@ class ButtonTurnOp(Operation):
     def apply(self, info: ControlInfo):
         info.targetX = 0
         info.targetY = 0
-        info.targetTurnSpeed = info.yawSpd * self.direction
+        info.targetYawSpeed = info.yawSpd * self.direction
 
     def __eq__(self, other):
         if isinstance(other, ButtonTurnOp):
@@ -77,7 +77,7 @@ class OmniMoveOp(Operation):
         return OmniMoveOp(move.x, move.y)
 
     def apply(self, info: ControlInfo):
-        info.targetTurnSpeed = 0
+        info.targetYawSpeed = 0
         if self.x is not None:
             info.targetX = info.linearSpd * self.x
         if self.y is not None:
@@ -137,8 +137,8 @@ moveButtonMappings = {
 speedChangeMappings = {
     Key.HAT_UP: LinearSpdChangeOp(1),
     Key.HAT_DOWN: LinearSpdChangeOp(-1),
-    Key.HAT_LEFT: YawSpdChangeOp(1),
-    Key.HAT_RIGHT: YawSpdChangeOp(-1),
+    Key.HAT_LEFT: YawSpdChangeOp(-1),
+    Key.HAT_RIGHT: YawSpdChangeOp(1),
 }
 # Right Button (RB)
 stopButton = 5
@@ -234,7 +234,8 @@ def main():
         else:
             print(f'[Controller "{joystick.name}" Connected]')
 
-    dashboardDrawer = Thread(target=lambda: drawingDashboard(info, dashboardHeader))
+    dashboard = Dashboard()
+    dashboardDrawer = Thread(target=lambda: dashboard.startRender(info, dashboardHeader))
     dashboardDrawer.daemon = True
     dashboardDrawer.start()
 

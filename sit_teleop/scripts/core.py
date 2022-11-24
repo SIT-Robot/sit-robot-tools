@@ -2,7 +2,7 @@ class ControlInfo:
     def __init__(self):
         self.targetX = 0
         self.targetY = 0
-        self.targetTurnSpeed = 0
+        self.targetYawSpeed = 0
 
         self.linearSpd = 0.2
         self.minLinearSpd = 0
@@ -17,11 +17,11 @@ class ControlInfo:
     def resetTargetSpd(self):
         self.targetX = 0
         self.targetY = 0
-        self.targetTurnSpeed = 0
+        self.targetYawSpeed = 0
 
     def sendVia(self, publisher):
         from rosapi import publishSpeed
-        publishSpeed(publisher, self.targetX, self.targetY, self.targetTurnSpeed)
+        publishSpeed(publisher, self.targetX, self.targetY, self.targetYawSpeed)
 
     def readFrom(self, json: dict):
         self.deserializeFrom("linearSpd", json, float)
