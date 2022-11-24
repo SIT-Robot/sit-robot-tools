@@ -33,7 +33,7 @@ localSavePath = "joystick_conf.json"
 def _doNothing(): pass
 
 
-class Kernal:
+class Dispatcher:
     def __init__(self):
         self.refreshMove = _doNothing
 
@@ -47,7 +47,7 @@ class Move:
 
 
 class Operation:
-    def apply(self, kernal: Kernal, info: ControlInfo):
+    def apply(self, kernal: Dispatcher, info: ControlInfo):
         pass
 
 
@@ -63,7 +63,7 @@ class ButtonTurnOp(Operation):
     def by(move: Movement) -> "ButtonTurnOp":
         return ButtonTurnOp(move.turn)
 
-    def apply(self, kernal: Kernal, info: ControlInfo):
+    def apply(self, kernal: Dispatcher, info: ControlInfo):
         info.targetX = 0
         info.targetY = 0
         info.targetYawSpeed = info.yawSpd * self.direction
@@ -84,7 +84,7 @@ class OmniMoveOp(Operation):
     def by(move: Movement) -> "OmniMoveOp":
         return OmniMoveOp(move.x, move.y)
 
-    def apply(self, kernal: Kernal, info: ControlInfo):
+    def apply(self, kernal: Dispatcher, info: ControlInfo):
         info.targetYawSpeed = 0
         if self.x is not None:
             info.targetX = info.linearSpd * self.x
@@ -100,7 +100,7 @@ class OmniMoveOp(Operation):
 
 class StopOp(Operation):
 
-    def apply(self, kernal: Kernal, info: ControlInfo):
+    def apply(self, kernal: Dispatcher, info: ControlInfo):
         info.resetTargetSpd()
 
     def __eq__(self, other):
@@ -114,7 +114,7 @@ class LinearSpdChangeOp(MetaOperation):
     def __init__(self, delta: float):
         self.delta = delta
 
-    def apply(self, kernal: Kernal, info: ControlInfo):
+    def apply(self, kernal: Dispatcher, info: ControlInfo):
         res = info.linearSpd + info.linearDeltaSpeed * self.delta
         info.linearSpd = clamp(info.minLinearSpd, res, info.maxLinearSpd)
         kernal.refreshMove()
@@ -124,7 +124,7 @@ class YawSpdChangeOp(MetaOperation):
     def __init__(self, delta: float):
         self.delta = delta
 
-    def apply(self, kernal: Kernal, info: ControlInfo):
+    def apply(self, kernal: Dispatcher, info: ControlInfo):
         res = info.yawSpd + info.yawDeltaSpeed * self.delta
         info.yawSpd = clamp(info.minYawSpd, res, info.maxYawSpd)
         kernal.refreshMove()
@@ -205,22 +205,22 @@ def runJoyStickListener():
     run_event_loop(onJoyAdded, onJoyRemoved, onKeyPressed)
 
 
-def createRosLoopTask(kernal: Kernal, info: ControlInfo) -> Callable[[object], None]:
+def createRosLoopTask(dispatcher: Dispatcher, info: ControlInfo) -> Callable[[object], None]:
     def refreshMoveFunc():
         if lastMoveOp is not None:
-            lastMoveOp.apply(kernal, info)
+            lastMoveOp.apply(dispatcher, info)
 
-    kernal.refreshMove = refreshMoveFunc
-    return lambda event: rosLoopCallback(kernal, info, event)
+    dispatcher.refreshMove = refreshMoveFunc
 
+    def rosLoopCallback(e):
+        if lastMoveOp is not None:
+            lastMoveOp.apply(dispatcher, info)
+        if len(metaOpQueue) > 0:
+            op = metaOpQueue.popleft()
+            op.apply(dispatcher, info)
+        info.sendVia(pub)
 
-def rosLoopCallback(kernal: Kernal, info: ControlInfo, e):
-    if lastMoveOp is not None:
-        lastMoveOp.apply(kernal, info)
-    if len(metaOpQueue) > 0:
-        op = metaOpQueue.popleft()
-        op.apply(kernal, info)
-    info.sendVia(pub)
+    return rosLoopCallback
 
 
 def on_shutdown():
@@ -258,8 +258,8 @@ def main():
     dashboardDrawer.daemon = True
     dashboardDrawer.start()
 
-    kernal: Kernal = Kernal()
-    rospy.Timer(rospy.Duration(0.05), createRosLoopTask(kernal, info))
+    dispatcher: Dispatcher = Dispatcher()
+    rospy.Timer(rospy.Duration(0.05), createRosLoopTask(dispatcher, info))
     rospy.on_shutdown(on_shutdown)
 
     try:
