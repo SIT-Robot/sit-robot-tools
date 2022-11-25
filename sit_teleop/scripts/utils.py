@@ -3,7 +3,7 @@ import platform
 from io import StringIO
 from typing import Tuple
 
-platformName = platform.platform()
+systemName = platform.system()
 
 
 class Str2D:
@@ -72,7 +72,7 @@ class Str2D:
             self[newX, y] = filler
 
 def clearScreen():
-    if platformName == "Windows":
+    if systemName == "Windows":
         os.system("cls")
     else:
         os.system("clear")
